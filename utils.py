@@ -101,7 +101,7 @@ assert validate_ip('11111111110.0.0.0') == False
 assert validate_ip('213.153.11.10722333333333333') == False
 assert validate_ip('.....................0.0.0...0') == False
 
-#Offline database would be the ideal part here , http://blog.brush.co.nz/2009/07/geoip/
+#Offline database would be the ideal part here , http://blog.brush.co.nz/2009/07/geoip/ http://stackoverflow.com/questions/19514749/best-ip-to-country-database
 def process_geolocation_data(ip_column):
 
     location={}

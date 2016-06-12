@@ -1,4 +1,4 @@
-#Indices in the input file
+# Indices in the input file
 DATE_LOCATION=0
 TIME_LOCATION=1
 USER_ID_LOCATION=2
