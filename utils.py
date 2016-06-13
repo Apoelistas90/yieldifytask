@@ -1,5 +1,3 @@
-#Write some tests
-
 import datetime,time,re,validators
 import requests
 import json
