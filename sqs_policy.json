@@ -1,0 +1,22 @@
+{
+ "Version": "2008-10-17",
+ "Id": "example-ID",
+ "Statement": [
+  {
+   "Sid": "example-statement-ID",
+   "Effect": "Allow",
+   "Principal": {
+    "AWS":"*"
+   },
+   "Action": [
+    "SQS:SendMessage"
+   ],
+   "Resource": "arn:aws:sqs:eu-west-1:957284751767:myqueue",
+   "Condition": {
+      "ArnLike": {
+      "aws:SourceArn": "arn:aws:sns:eu-west-1:957284751767:yieldifytask"
+    }
+   }
+  }
+ ]
+}

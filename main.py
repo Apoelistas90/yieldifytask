@@ -1,3 +1,7 @@
+# https://www.pypa.io/en/latest/
+# https://alestic.com/2014/12/s3-bucket-notification-to-sqssns-on-object-creation/
+# http://www.slideshare.net/AmazonWebServices/massive-message-processing-with-amazon-sqs-and-amazon-dynamodb-arc301-aws-reinvent-2013-28431182
+
 import sys
 import csv
 import gzip as gz
@@ -33,6 +37,7 @@ def parse_and_transform_file(input_file):
     with gz.open(input_file, 'rb') as tsvfile:
         records = csv.reader(tsvfile, delimiter='\t')
 
+        # get indices
         date = constants.DATE_LOCATION
         time = constants.TIME_LOCATION
         url = constants.URL_LOCATION
