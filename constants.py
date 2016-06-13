@@ -13,18 +13,20 @@ APIKEY = 'a24bab79e02ae0e4083b9327dc2c49a9f76babbac85486d99306fa0e18110f95'
 #OS_MOBILE = ['android','ios','iphone os','ipad','blackberry','opera mobi','opera mini','windows phone']
 
 S3_SOURCE_DIRECTORY = ''
-S3_DESTINATION_DIRECTORY = ''
+S3_DESTINATION_BUCKET = 'yieldifyadamides'
+S3_DESTINATION_PREFIX = 'uploads/'
 
 
 SQS_QUEUE_NAME = 'myqueue'
-SQS_VISIBILITY_TIMEOUT = 1
-SQS_WAIT_TIME_SECONDS = 1
+SQS_VISIBILITY_TIMEOUT = 20
+SQS_WAIT_TIME_SECONDS = 5
 SQS_MESSAGE_VALIDATION_STRING = 'Messages'
 
 TEMP_DIR = 'yieldify'
 
-SLEEP_SECONDS = 1
+SLEEP_SECONDS = 2
 S3_PROFILE_NAME = "default"
+
 
 
 
