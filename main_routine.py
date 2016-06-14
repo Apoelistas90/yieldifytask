@@ -9,6 +9,8 @@ import shutil
 import constants
 import wrapper
 
+#todo = monitor api calls and then proceed
+#todo = log complete files in rds or dynamo
 
 # SQS related constants
 SQS_QUEUE_NAME = constants.SQS_QUEUE_NAME
@@ -70,7 +72,6 @@ def start():
             print('Processing complete!')
             # Compress and upload output file
             wrapper.upload_to_s3(output_json,source_file_name,s3c,S3_DESTINATION_BUCKET,S3_DESTINATION_PREFIX)
-
             #*****review when to delete
             sqs.delete_message(QueueUrl=queue['QueueUrl'], ReceiptHandle=receipt_handle)
             shutil.rmtree(tempdir)

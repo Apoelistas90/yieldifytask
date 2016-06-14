@@ -60,13 +60,19 @@ def upload_to_s3(output_json,source_file_name,s3c,s3_bucket,s3_key_prefix):
     file_path = os.path.join(tempdir, file_name)
     result = False
 
+    print(output_json)
+
     with gz.open(file_path, 'wb') as gzfile:
         gzfile.write(output_json)
         print('Uploading ' + file_path + ' to ' + s3_key_prefix + file_name)
-        result = s3c.upload_file(file_path, s3_bucket, s3_key_prefix + file_name)
+
         # delete temporary files and directory from local disk
         gzfile.close()
-        shutil.rmtree(tempdir)
+
+    # Deal with result
+    result = s3c.upload_file(file_path, s3_bucket, s3_key_prefix + file_name)
+    print(result)
+    shutil.rmtree(tempdir)
     return result
 
 
