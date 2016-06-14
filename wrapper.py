@@ -33,6 +33,9 @@ def parse_and_transform_file(input_file):
         ip = constants.IP_LOCATION
         ua = constants.UA_LOCATION
 
+        # go through each record and
+        # 1. store relevant information in a json(Done)
+        # 2. insert data in DynamoDB for later querying through API service(Not yet started)
         for record in records:
             if(len(record) == constants.TOTAL_LENGTH):
                 if(utils.validate_date(record[date]) and utils.validate_time(record[time])):

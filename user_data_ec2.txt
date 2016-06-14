@@ -1,1 +1,13 @@
-aws s3 cp s3://yieldifyadamides/scripts/ .
+#!/bin/bash
+
+sudo pip install validators
+sudo pip install boto3
+
+aws s3 cp s3://yieldifyadamides/scripts/main_routine.py ~/yieldifycrawler/
+aws s3 cp s3://yieldifyadamides/scripts/wrapper.py ~/yieldifycrawler/
+aws s3 cp s3://yieldifyadamides/scripts/utils.py ~/yieldifycrawler/
+aws s3 cp s3://yieldifyadamides/scripts/constants.py ~/yieldifycrawler/
+
+
+cd ~/yieldifycrawler/
+python main_routine.py
