@@ -7,10 +7,14 @@ import os
 import tempfile
 import shutil
 import constants
-import wrapper
+import etl_functions
 
-#todo = monitor api calls and then proceed
 #todo = log complete files in rds or dynamo
+#todo = make as service
+#todo = source constants from file
+#todo = review user agent processing
+
+
 
 # SQS related constants
 SQS_QUEUE_NAME = constants.SQS_QUEUE_NAME
@@ -29,9 +33,11 @@ SLEEP_SECONDS = constants.SLEEP_SECONDS
 sqs = boto3.client('sqs',region_name='eu-west-1')
 queue = sqs.get_queue_url(QueueName = SQS_QUEUE_NAME)
 # Setup S3 connection
-session = boto3.session.Session(region_name='eu-west-1')
-s3 = session.resource('s3')
-s3c = s3.meta.client
+#session = boto3.session.Session(region_name='eu-west-1')
+#s3 = session.resource('s3')
+#s3c = s3.meta.client
+
+s3 = boto3.resource('s3')
 
 #region_name='eu-west-1'
 
@@ -42,6 +48,12 @@ def start():
         # Get a message
         # https://aws.amazon.com/blogs/aws/amazon-sqs-long-polling-batching/
         #VisibilityTimeout = times*3 normal time to be safe
+
+        # check source S3 directory - if it contains any files move them to working area
+        # where an SQS message will be issued
+
+
+
 
         # attempt to see if new message is available
         message = sqs.receive_message( QueueUrl=queue['QueueUrl'],
@@ -64,14 +76,15 @@ def start():
             source_file_name = os.path.basename(object_key)
             file_path = os.path.join(tempdir, source_file_name)
             print('Downloading ' + object_key + ' to ' + file_path)
-            s3c.download_file(bucket, object_key, file_path)
+            s3.meta.client.download_file(bucket, object_key, file_path)
 
             # Parse and process input file
             print('Processing ' + object_key + '.....')
-            output_json = wrapper.parse_and_transform_file(file_path)
+            output_json = etl_functions.parse_and_transform_file(file_path)
             print('Processing complete!')
-            # Compress and upload output file
-            wrapper.upload_to_s3(output_json,source_file_name,s3c,S3_DESTINATION_BUCKET,S3_DESTINATION_PREFIX)
+            # Compress and upload output file in S3
+            etl_functions.upload_to_s3(output_json,source_file_name,s3,S3_DESTINATION_BUCKET,S3_DESTINATION_PREFIX)
+
             #*****review when to delete
             sqs.delete_message(QueueUrl=queue['QueueUrl'], ReceiptHandle=receipt_handle)
             shutil.rmtree(tempdir)

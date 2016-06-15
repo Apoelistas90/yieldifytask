@@ -1,13 +1,22 @@
 #!/bin/bash
 
+# This script is intended to be the 'user data' part of launching an EC2 instance
+
+# Install required libraries for python code
 sudo pip install validators
 sudo pip install boto3
 
+# Copy python scripts from S3 to EC2 instance in ~ dir
 aws s3 cp s3://yieldifyadamides/scripts/main_routine.py ~/yieldifycrawler/
 aws s3 cp s3://yieldifyadamides/scripts/wrapper.py ~/yieldifycrawler/
 aws s3 cp s3://yieldifyadamides/scripts/utils.py ~/yieldifycrawler/
 aws s3 cp s3://yieldifyadamides/scripts/constants.py ~/yieldifycrawler/
 
+# Copy shell wrapper script which runs the python ETL service
+aws s3 cp s3://yieldifyadamides/scripts/yieldify_task_wrapper.sh ~/yieldifycrawler/
 
-cd ~/yieldifycrawler/
-python main_routine.py
+# Copy init.d script(service) from S3 in /etc/init.d/
+aws s3 cp s3://yieldifyadamides/scripts/yieldifyservice.sh /etc/init.d/
+
+# Start ETL service
+/etc/init.d/yieldifyservice start
