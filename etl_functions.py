@@ -79,18 +79,12 @@ def validate_ip(ip_column):
     else:
         return False
 
+
 # offline database would be the ideal part here ,
 # http://blog.brush.co.nz/2009/07/geoip/
 # http://stackoverflow.com/questions/19514749/best-ip-to-country-database
 def process_geolocation_data(ip_column):
-
     location={}
-    #1.
-    #STATIC_URL = 'http://freegeoip.net/json'
-    #request_url = '{}/{}'.format(STATIC_URL, ip_column)
-    #response = requests.get(request_url)
-    #print(response.json())
-    #2. API key = a24bab79e02ae0e4083b9327dc2c49a9f76babbac85486d99306fa0e18110f95   - might need to retest IP allowed in AWS
     request_url = constants.GEOLOCATIONURL + constants.APIKEY + '&ip=' + ip_column + '&format=json'
     response_content = requests.get(request_url)._content
     response_content_json = json.loads(response_content)
@@ -109,7 +103,7 @@ def process_user_agent(ua_column):
         request_url = 'http://useragentstring.com/?uas=' + ua_column.replace(' ','%20') + '&getJSON=all'
         response_content = requests.get(request_url)._content
         response_content_json = json.loads(response_content)
-        #print(response_content_json)
+
         # get is_mobile
         b = reg_b.search(ua_column)
         v = reg_v.search(ua_column[0:4])
@@ -118,58 +112,58 @@ def process_user_agent(ua_column):
         else:
             result['mobile'] = False
 
-        #if response_content_json['os_name'].lower() in constants.OS_MOBILE or 'Mobile' in ua_column:
-        #    result['is_mobile'] = True
-        #else:
-        #    result['is_mobile'] = False
-
-        #get OS_family
+        # get OS_family
         result['os_family'] = if_null(response_content_json['os_type'],'')
-        #get full string
+        # get full string
         result['string'] = ua_column
-        #get browser_family
+        # get browser_family
         result['browser_family'] = if_null(response_content_json['agent_name'],'')
 
     except ValueError:
         return result
     return result
 
-
-##################################
 # http://www.slideshare.net/AmazonWebServices/massive-message-processing-with-amazon-sqs-and-amazon-dynamodb-arc301-aws-reinvent-2013-28431182
 def parse_and_transform_file(input_file):
-    # function variables
     tranformed_data = {}
     tranformed_record = {}
     counter=1
     # decompress the file and process according to wanted output
     with gz.open(input_file, 'rb') as tsvfile:
         records = csv.reader(tsvfile, delimiter='\t')
-        # get indices
-        date = constants.DATE_LOCATION
-        time = constants.TIME_LOCATION
-        url = constants.URL_LOCATION
-        ip = constants.IP_LOCATION
-        ua = constants.UA_LOCATION
 
         # go through each record and
         # 1. store relevant information in a json(Done)
         # 2. insert data in DynamoDB for later querying through API service(Not yet started)
         for record in records:
-            if(len(record) == constants.TOTAL_LENGTH):
-                if(validate_date(record[date]) and validate_time(record[time])):
-                    tranformed_record['timestamp'] = record[date] + ' ' + record[time]
-                if(validate_url(record[url])):
-                    tranformed_record['url'] = record[url]
-                if(validate_ip(record[ip])):
-                    tranformed_record['location'] = process_geolocation_data(record[ip])
-                if(record[ua] != ''): #need to test this
-                    tranformed_record['user_agent'] = process_user_agent(record[ua])
+            if len(record) == constants.TOTAL_LENGTH:
+                if validate_date(record[constants.DATE_LOCATION]) \
+                        and validate_time(record[constants.TIME_LOCATION]):
+                    tranformed_record['timestamp'] = record[constants.DATE_LOCATION] + ' ' + record[constants.TIME_LOCATION]
+                else:
+                    tranformed_record['timestamp'] = 'Invalid'
+                if record[constants.USER_ID_LOCATION] != '':
+                    tranformed_record['user_id'] = record[constants.USER_ID_LOCATION]
+                else:
+                    tranformed_record['user_id'] = 'Invalid'
+                if validate_url(record[constants.URL_LOCATION]):
+                    tranformed_record['url'] = record[constants.URL_LOCATION]
+                else:
+                    tranformed_record['url'] = 'Invalid'
+                if validate_ip(record[constants.IP_LOCATION]):
+                    tranformed_record['location'] = process_geolocation_data(record[constants.IP_LOCATION])
+                else:
+                    tranformed_record['location'] = 'Invalid'
+                if record[constants.UA_LOCATION] != '':
+                    tranformed_record['user_agent'] = process_user_agent(record[constants.UA_LOCATION])
+                else:
+                    tranformed_record['user_agent'] = 'Invalid'
                 tranformed_data[counter] = tranformed_record
                 counter+=1
 
     # convert directly dict to json and return
     return json.dumps(tranformed_data)
+
 
 def upload_to_s3(output_json,source_file_name,s3,s3_bucket,s3_key_prefix):
     # creating temporary directory for our file
