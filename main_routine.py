@@ -21,7 +21,7 @@ sqs = boto3.client('sqs',region_name='eu-west-1')
 queue = sqs.get_queue_url(QueueName = constants.SQS_QUEUE_NAME)
 # Setup S3 connection
 s3 = boto3.resource('s3')
-
+s3_client = boto3.client('s3')
 
 def start():
 
@@ -31,9 +31,12 @@ def start():
         # https://aws.amazon.com/blogs/aws/amazon-sqs-long-polling-batching/
         #VisibilityTimeout = times*3 normal time to be safe
 
-        # check source S3 directory - if it contains any files move them to working area
-        # where an SQS message will be issued
-
+        # get number of files in inbox directory. if zero sleep and continue
+        # if more than 0 move them one by one in working directory which will trigger a message in sqs
+        result = s3_client.list_objects(Bucket=constants.S3_DESTINATION_BUCKET,
+                                        Prefix=constants.S3_SOURCE_DIRECTORY,
+                                        Delimiter='|')
+        exit(0)
 
 
 
