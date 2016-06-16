@@ -8,15 +8,26 @@ sudo pip install boto3
 
 # Copy python scripts from S3 to EC2 instance in ~ dir
 aws s3 cp s3://yieldifyadamides/scripts/main_routine.py ~/yieldifycrawler/
-aws s3 cp s3://yieldifyadamides/scripts/wrapper.py ~/yieldifycrawler/
-aws s3 cp s3://yieldifyadamides/scripts/utils.py ~/yieldifycrawler/
+aws s3 cp s3://yieldifyadamides/scripts/etl_functions.py ~/yieldifycrawler/
 aws s3 cp s3://yieldifyadamides/scripts/constants.py ~/yieldifycrawler/
+
+
+# Install dos2nix
+sudo yum install dos2unix
+
 
 # Copy shell wrapper script which runs the python ETL service
 aws s3 cp s3://yieldifyadamides/scripts/yieldify_task_wrapper.sh ~/yieldifycrawler/
+dos2unix ~/yieldifycrawler/yieldify_task_wrapper.sh
+sudo chmod 750 /home/ec2-user/yieldifycrawler/yieldify_task_wrapper.sh
+
 
 # Copy init.d script(service) from S3 in /etc/init.d/
-aws s3 cp s3://yieldifyadamides/scripts/yieldifyservice.sh /etc/init.d/
+sudo aws s3 cp s3://yieldifyadamides/scripts/yieldifyservice /etc/init.d/
+sudo dos2unix /etc/init.d/yieldifyservice
+sudo chmod 750 /etc/init.d/yieldifyservice
+sudo chown root:root /etc/init.d/yieldifyservice
+
 
 # Start ETL service
-/etc/init.d/yieldifyservice start
+sudo sh /etc/init.d/yieldifyservice start

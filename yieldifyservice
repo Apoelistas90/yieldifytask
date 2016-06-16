@@ -1,0 +1,36 @@
+#!/bin/sh
+
+#This script goes in /etc/init.d and is intended to be managed as service
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin
+DAEMON=/home/ec2-user/yieldifycrawler/yieldify_task_wrapper.sh
+PIDFILE=/var/run/yieldify_task_wrapper.pid
+
+#test -x $DAEMON || exit 0
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+
+case "$1" in
+  start)
+     daemon $DAEMON
+   ;;
+  stop)
+     #killproc $DAEMON
+     PID=`ps -ef |grep yieldifycrawler | head -1 | awk '{print $2}'`
+     kill -9 $PID
+   ;;
+  force-reload|restart)
+     $0 stop
+     $0 start
+   ;;
+  status)
+     status -p $PIDFILE $DAEMON
+     #status -p $PIDFILE -b $DAEMON yieldifyservice && exit 0 || exit $?
+   ;;
+ *)
+   #echo "Usage: /etc/init.d/yieldifyservice {start|stop|restart|force-reload|status}"
+   exit 1
+  ;;
+esac
