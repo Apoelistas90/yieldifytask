@@ -11,8 +11,6 @@ import etl_functions
 from boto3.dynamodb.conditions import Key, Attr
 
 
-#todo = based on object key continue or not. connect a db that holds logs of proccessed files and timestamp
-
 # Setup SQS connection
 sqs = boto3.client('sqs',region_name='eu-west-1')
 queue = sqs.get_queue_url(QueueName = constants.SQS_QUEUE_NAME)
