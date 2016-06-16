@@ -35,7 +35,7 @@ assert etl_functions.validate_ip('.....................0.0.0...0') == False
 
 # process geolocation data
 assert etl_functions.process_geolocation_data('213.153.11.107') == {'latitude': u'60.2551', 'country': u'Norway', 'longitude': u'5.10161', 'city': u'Skogsvagen'}
-#assert wrapper.process_geolocation_data('81.155.236.202') == {'latitude': u'51.5095', 'country': u'United Kingdom', 'longitude': u'-0.19576', 'city': u'Notting Hill Gate'}
+
 
 # process user agent
 assert (etl_functions.process_user_agent('Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.124 Safari/537.36')) == \
@@ -48,6 +48,3 @@ assert (etl_functions.process_user_agent('Mozilla/5.0 (iPhone; CPU OS 7_1_2 like
        {'mobile': True, 'string': 'Mozilla/5.0 (iPhone; CPU OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53', 'os_family': u'Macintosh', 'browser_family': u'Safari'}
 assert (etl_functions.process_user_agent('Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0')) == \
        {'mobile': False, 'string': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0', 'os_family': u'Linux', 'browser_family': u'Firefox'}
-
-
-

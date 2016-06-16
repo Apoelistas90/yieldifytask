@@ -77,12 +77,18 @@ def process_geolocation_data(ip_column):
     location={}
     request_url = constants.GEOLOCATIONURL + constants.APIKEY + '&ip=' + ip_column + '&format=json'
     response_content = requests.get(request_url)._content
-    response_content_json = json.loads(response_content)
-    location['latitude'] = if_null(response_content_json['latitude'],0.0)
-    location['longitude'] = if_null(response_content_json['longitude'],0.0)
-    location['country'] = if_null(response_content_json['countryName'],0.0)
-    location['city'] = if_null(response_content_json['cityName'],0.0)
-    return location
+    try:
+        response_content_json = json.loads(response_content)
+        location['latitude'] = if_null(response_content_json['latitude'],0.0)
+        location['longitude'] = if_null(response_content_json['longitude'],0.0)
+        location['country'] = if_null(response_content_json['countryName'],0.0)
+        location['city'] = if_null(response_content_json['cityName'],0.0)
+        return location,True
+    except ValueError:
+        location['ip'] = ip_column
+        print(response_content)
+        print('Failure')
+        return location,False
 
 
 # processing of 5th column = ua
@@ -144,7 +150,7 @@ def parse_and_transform_file(input_file):
                 else:
                     tranformed_record['url'] = 'Invalid'
                 if validate_ip(record[constants.IP_LOCATION]):
-                    tranformed_record['location'] = process_geolocation_data(record[constants.IP_LOCATION])
+                    tranformed_record['location'], res = process_geolocation_data(record[constants.IP_LOCATION])
                 else:
                     tranformed_record['location'] = 'Invalid'
                 if record[constants.UA_LOCATION] != '':
@@ -153,7 +159,6 @@ def parse_and_transform_file(input_file):
                     tranformed_record['user_agent'] = 'Invalid'
                 tranformed_data[counter] = tranformed_record
                 counter+=1
-                print(counter)
 
     # convert directly dict to json and return
     return json.dumps(tranformed_data)

@@ -8,11 +8,10 @@ import tempfile
 import shutil
 import constants
 import etl_functions
+from boto3.dynamodb.conditions import Key, Attr
 
-#todo = log process and complete files in rds or dynamo
-#todo = review user agent processing
-#todo = log that this file has been processed successfully including timestamp of completion
 
+#todo = based on object key continue or not. connect a db that holds logs of proccessed files and timestamp
 
 # Setup SQS connection
 sqs = boto3.client('sqs',region_name='eu-west-1')
@@ -20,6 +19,9 @@ queue = sqs.get_queue_url(QueueName = constants.SQS_QUEUE_NAME)
 # Setup S3 connection
 s3 = boto3.resource('s3')
 s3_client = boto3.client('s3')
+# Setup DynamoDB
+dynamodb = boto3.resource('dynamodb')
+filenames_table = dynamodb.Table(constants.DYNAMO_FILES_TABLE)
 
 
 def routine_etl(object_key):
@@ -68,9 +70,20 @@ def process_current_files():
             if '.gz' not in result['Contents'][index]['Key']:
                 continue
             object_key = result['Contents'][index]['Key']
-            status, msg = routine_etl(object_key)
-            if not status:
-                return status,msg
+            # if this file has been processed before continue to next file
+            filename = object_key.split(constants.S3_SOURCE_DIRECTORY)[1]
+            res = filenames_table.query(KeyConditionExpression=Key(constants.DYNAMO_FILES_TABLE_PK).eq(filename))
+            if res['Count'] == 1:
+                print('File ' + filename + ' already processed.. Skipping this.')
+                continue
+            # otherwise process it
+            else:
+                complete, msg = routine_etl(object_key)
+                if not complete:
+                    return complete, msg
+                # add filename to dynamo table
+                filenames_table.put_item(Item = {constants.DYNAMO_FILES_TABLE_PK: filename})
+
         return True, 'Processing of existing files complete!'
     else:
         return False, 'Incorrect prefix, directory does not exist...'
@@ -100,14 +113,24 @@ def start():
 
             # Main ETL process here
             object_key = ast.literal_eval(lower_message_body['Message'])['Records'][0]['s3']['object']['key']
-            status, completion_msg = routine_etl(object_key)
-
-            if status:
-                # Processing is complete, delete message from queue
+            filename = object_key.split(constants.S3_SOURCE_DIRECTORY)[1]
+            res = filenames_table.query(KeyConditionExpression=Key(constants.DYNAMO_FILES_TABLE_PK).eq(filename))
+            # If file has been already processed delete sqs message and continue
+            if res['Count'] == 1:
+                print('File '+ filename + ' already processed.. Skipping this.')
                 sqs.delete_message(QueueUrl=queue['QueueUrl'], ReceiptHandle=receipt_handle)
+            # Else process it and then delete message
             else:
-                # There was an issue with current message, alert here is desirable
-                print(completion_msg)
+                status, completion_msg = routine_etl(object_key)
+
+                if status:
+                    # Processing is complete, delete message from queue
+                    sqs.delete_message(QueueUrl=queue['QueueUrl'], ReceiptHandle=receipt_handle)
+                    # add filename to dynamo table
+                    filenames_table.put_item(Item = {constants.DYNAMO_FILES_TABLE_PK: filename})
+                else:
+                    # There was an issue with current message, alert here is desirable
+                    print(completion_msg)
         else:
             print "No message!"
 
@@ -116,6 +139,7 @@ def start():
 if __name__ == "__main__":
     done, msg = process_current_files()
     if done:
+        print(msg)
         start()
     else:
         print('There was an issue in processing the current files in the bucket, please investigate:')

@@ -25,6 +25,10 @@ SQS_WAIT_TIME_SECONDS = 1
 SQS_MESSAGE_VALIDATION_STRING = 'Messages'
 SLEEP_SECONDS = 2
 
+# DynamoDB details
+DYNAMO_FILES_TABLE = 'processed_files'
+DYNAMO_FILES_TABLE_PK = 'file_name'
+
 # Other
 TEMP_DIR = 'yieldify'
 
