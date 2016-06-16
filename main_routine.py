@@ -14,10 +14,12 @@ from boto3.dynamodb.conditions import Key, Attr
 # Setup SQS connection
 sqs = boto3.client('sqs',region_name='eu-west-1')
 queue = sqs.get_queue_url(QueueName = constants.SQS_QUEUE_NAME)
+
 # Setup S3 connection
 s3 = boto3.resource('s3')
 s3_client = boto3.client('s3')
-# Setup DynamoDB
+
+# Setup DynamoDB connection
 dynamodb = boto3.resource('dynamodb')
 filenames_table = dynamodb.Table(constants.DYNAMO_FILES_TABLE)
 
@@ -100,7 +102,7 @@ def start():
          Validation process: If the message contains constants.SQS_MESSAGE_VALIDATION_STRING('Messages')
          as one of its keys then this means there are messages to process"""
         if sqs_message is not None and constants.SQS_MESSAGE_VALIDATION_STRING in sqs_message:
-            # Get message details
+            # Get SQS message details
             receipt_handle = sqs_message['Messages'][0]['ReceiptHandle']
             lower_message_body = ast.literal_eval(sqs_message['Messages'][0]['Body'])
 
@@ -113,6 +115,7 @@ def start():
             object_key = ast.literal_eval(lower_message_body['Message'])['Records'][0]['s3']['object']['key']
             filename = object_key.split(constants.S3_SOURCE_DIRECTORY)[1]
             res = filenames_table.query(KeyConditionExpression=Key(constants.DYNAMO_FILES_TABLE_PK).eq(filename))
+
             # If file has been already processed delete sqs message and continue
             if res['Count'] == 1:
                 print('File '+ filename + ' already processed.. Skipping this.')
@@ -138,6 +141,7 @@ if __name__ == "__main__":
     done, msg = process_current_files()
     if done:
         print(msg)
+        print('Now starting monitoring for new files using SQS polling')
         start()
     else:
         print('There was an issue in processing the current files in the bucket, please investigate:')
