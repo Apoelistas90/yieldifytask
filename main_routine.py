@@ -55,6 +55,8 @@ def routine_etl(object_key):
 
     print('Processing complete!')
 
+
+
     s3_destination_subdir = object_key.split('/')[1] \
                             + '/' + object_key.split('/')[2] \
                             + '/' + object_key.split('/')[3] + '/'
