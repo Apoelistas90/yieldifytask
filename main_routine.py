@@ -8,7 +8,7 @@ import tempfile
 import shutil
 import constants
 import etl_functions
-from boto3.dynamodb.conditions import Key, Attr
+from boto3.dynamodb.conditions import Key
 
 
 # Setup SQS connection
@@ -16,11 +16,12 @@ sqs = boto3.client('sqs',region_name='eu-west-1')
 queue = sqs.get_queue_url(QueueName = constants.SQS_QUEUE_NAME)
 
 # Setup S3 connection
-s3 = boto3.resource('s3')
-s3_client = boto3.client('s3')
+session = boto3.Session(profile_name=constants.S3_PROFILE_NAME)
+s3 = session.resource('s3')
+s3_client = session.client('s3')
 
 # Setup DynamoDB connection
-dynamodb = boto3.resource('dynamodb')
+dynamodb = boto3.resource('dynamodb',region_name='eu-west-1')
 filenames_table = dynamodb.Table(constants.DYNAMO_FILES_TABLE)
 
 
@@ -56,10 +57,12 @@ def routine_etl(object_key):
                                              constants.S3_DESTINATION_PREFIX + s3_destination_subdir)
     shutil.rmtree(tempdir)
 
+
     return status,msg
 
 
 def process_current_files():
+
     result = s3_client.list_objects(Bucket=constants.S3_DESTINATION_BUCKET,
                                     Prefix=constants.S3_SOURCE_DIRECTORY,
                                     Delimiter='|')
@@ -79,7 +82,6 @@ def process_current_files():
             length = len(object_key.split('/'))
             filename = object_key.split('/')[length -1]
 
-            print(filename)
             # if this file has been processed before continue to next file
             # Note: The check is done against the filename. If a file comes in with the same name across two days
             # it will only be processed once
@@ -90,6 +92,7 @@ def process_current_files():
             # otherwise process it
             else:
                 complete, msg = routine_etl(object_key)
+
                 if not complete:
                     return complete, msg
                 # add filename to dynamo table
@@ -123,9 +126,9 @@ def start():
                 continue
 
             # Main ETL process here
-            object_key = ast.literal_eval(lower_message_body['Message'])['Records'][0]['s3']['object']['key']#check for gz
+            object_key = ast.literal_eval(lower_message_body['Message'])['Records'][0]['s3']['object']['key']
 
-            # Get filename
+            # Get filename(no need to check the file is .gz as the S3 notification pushes only .gz files in the queue)
             length = len(object_key.split('/'))
             filename = object_key.split('/')[length -1]
 
@@ -157,7 +160,8 @@ if __name__ == "__main__":
     if done:
         print(msg)
         print('Now starting monitoring for new files using SQS polling')
-        start()
+        # Start SQS polling and processing of messages
+        #start()
     else:
         print('There was an issue in processing the current files in the bucket, please investigate:')
         print(msg)
