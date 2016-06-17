@@ -17,7 +17,8 @@ S3_PROFILE_NAME = "yieldify"#"default"
 # S3 details
 S3_SOURCE_DIRECTORY = 'data/'
 #S3_WORKING_DIRECTORY = 'inbox/'
-S3_DESTINATION_BUCKET = 'yieldifyadamides' #yi-engineering-recruitment
+#S3_DESTINATION_BUCKET = 'yieldifyadamides' #yi-engineering-recruitment
+S3_DESTINATION_BUCKET = 'yi-engineering-recruitment' #yi-engineering-recruitment
 S3_DESTINATION_PREFIX = 'processed/adamidesa/'
 
 # SQS details

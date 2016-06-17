@@ -32,17 +32,27 @@ def routine_etl(object_key):
     source_file_name = os.path.basename(object_key)
     file_path = os.path.join(tempdir, source_file_name)
 
+
+
     print('Downloading ' + object_key + ' to ' + file_path)
     s3.meta.client.download_file(constants.S3_DESTINATION_BUCKET,
                                  object_key,
                                  file_path)
+
+    # check contents of file and whether its gzipeed
+    if not etl_functions.is_file_gz(file_path):
+        return False,'File not gzipped'
 
     if not os.path.isfile(file_path):
         return False,'Download from S3 to local temp dir for processing failed...'
 
     # Parse and process input file
     print('Processing ' + object_key + '.....')
-    output_json = etl_functions.parse_and_transform_file(file_path)
+    processing_result , output_json = etl_functions.parse_and_transform_file(file_path)
+    if not processing_result:
+        shutil.rmtree(tempdir)
+        return False,'File not gzipped'
+
     print('Processing complete!')
 
     s3_destination_subdir = object_key.split('/')[1] \
@@ -75,12 +85,14 @@ def process_current_files():
         # Loop through files
         for index in range(0,total_files):
             object_key = result['Contents'][index]['Key']
+            # check if file has suffix of gz file
             if '.gz' not in object_key:
                 continue
 
             # Get filename
             length = len(object_key.split('/'))
             filename = object_key.split('/')[length -1]
+
 
             # if this file has been processed before continue to next file
             # Note: The check is done against the filename. If a file comes in with the same name across two days
@@ -94,7 +106,8 @@ def process_current_files():
                 complete, msg = routine_etl(object_key)
 
                 if not complete:
-                    return complete, msg
+                    print(msg)
+                    continue
                 # add filename to dynamo table
                 filenames_table.put_item(Item = {constants.DYNAMO_FILES_TABLE_PK: filename})
 
@@ -131,6 +144,7 @@ def start():
             # Get filename(no need to check the file is .gz as the S3 notification pushes only .gz files in the queue)
             length = len(object_key.split('/'))
             filename = object_key.split('/')[length -1]
+            # need to check actual content of file if its gzip or not
 
             res = filenames_table.query(KeyConditionExpression=Key(constants.DYNAMO_FILES_TABLE_PK).eq(filename))
 
@@ -150,6 +164,8 @@ def start():
                 else:
                     # There was an issue with current message, alert here is desirable
                     print(completion_msg)
+                    if completion_msg == 'File not gzipped':
+                        sqs.delete_message(QueueUrl=queue['QueueUrl'], ReceiptHandle=receipt_handle)
         else:
             print "No message!"
 

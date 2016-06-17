@@ -128,43 +128,45 @@ def parse_and_transform_file(input_file):
     tranformed_record = {}
     counter=1
     # decompress the file and process according to wanted output
-    with gz.open(input_file, 'rb') as tsvfile:
-        records = csv.reader(tsvfile, delimiter='\t')
+    try:
+        with gz.open(input_file, 'rb') as tsvfile:
+            records = csv.reader(tsvfile, delimiter='\t')
 
-        # go through each record and
-        # 1. store relevant information in a json(Done)
-        # log invalid records
-        # 2. insert data in DynamoDB for later querying through API service(Not yet started)
-        for record in records:
-            if len(record) == constants.TOTAL_LENGTH:
-                if validate_date(record[constants.DATE_LOCATION]) \
-                        and validate_time(record[constants.TIME_LOCATION]):
-                    tranformed_record['timestamp'] = record[constants.DATE_LOCATION]\
-                                                     + ' ' + record[constants.TIME_LOCATION]
-                else:
-                    tranformed_record['timestamp'] = 'Invalid'
-                if record[constants.USER_ID_LOCATION] != '':
-                    tranformed_record['user_id'] = record[constants.USER_ID_LOCATION]
-                else:
-                    tranformed_record['user_id'] = 'Invalid'
-                if validate_url(record[constants.URL_LOCATION]):
-                    tranformed_record['url'] = record[constants.URL_LOCATION]
-                else:
-                    tranformed_record['url'] = 'Invalid'
-                if validate_ip(record[constants.IP_LOCATION]):
-                    tranformed_record['location'], res = process_geolocation_data(record[constants.IP_LOCATION])
-                else:
-                    tranformed_record['location'] = 'Invalid'
-                if record[constants.UA_LOCATION] != '':
-                    tranformed_record['user_agent'] = process_user_agent(record[constants.UA_LOCATION])
-                else:
-                    tranformed_record['user_agent'] = 'Invalid'
-                tranformed_data[counter] = tranformed_record
-                counter+=1
+            # go through each record and
+            # 1. store relevant information in a json(Done)
+            # log invalid records
+            # 2. insert data in DynamoDB for later querying through API service(Not yet started)
+            for record in records:
+                if len(record) == constants.TOTAL_LENGTH:
+                    if validate_date(record[constants.DATE_LOCATION]) \
+                            and validate_time(record[constants.TIME_LOCATION]):
+                        tranformed_record['timestamp'] = record[constants.DATE_LOCATION]\
+                                                         + ' ' + record[constants.TIME_LOCATION]
+                    else:
+                        tranformed_record['timestamp'] = 'Invalid'
+                    if record[constants.USER_ID_LOCATION] != '':
+                        tranformed_record['user_id'] = record[constants.USER_ID_LOCATION]
+                    else:
+                        tranformed_record['user_id'] = 'Invalid'
+                    if validate_url(record[constants.URL_LOCATION]):
+                        tranformed_record['url'] = record[constants.URL_LOCATION]
+                    else:
+                        tranformed_record['url'] = 'Invalid'
+                    if validate_ip(record[constants.IP_LOCATION]):
+                        tranformed_record['location'], res = process_geolocation_data(record[constants.IP_LOCATION])
+                    else:
+                        tranformed_record['location'] = 'Invalid'
+                    if record[constants.UA_LOCATION] != '':
+                        tranformed_record['user_agent'] = process_user_agent(record[constants.UA_LOCATION])
+                    else:
+                        tranformed_record['user_agent'] = 'Invalid'
+                    tranformed_data[counter] = tranformed_record
+                    counter+=1
 
-    # convert directly dict to json and return
-    return json.dumps(tranformed_data)
-
+        # convert directly dict to json and return
+        return True,json.dumps(tranformed_data)
+    except IOError:
+        return False,'File not GZIP'
 
 def upload_to_s3(output_json,source_file_name,s3,s3_bucket,s3_key_prefix):
     # creating temporary directory for our file
@@ -196,6 +198,15 @@ def upload_to_s3(output_json,source_file_name,s3,s3_bucket,s3_key_prefix):
     else:
         return False,'Incomplete upload'
 
+
+def is_file_gz(filename):
+    gzip = "\x1f\x8b\x08"
+    gz_length = len(gzip)
+    with open(filename) as file:
+        file_start = file.read(gz_length)
+        if file_start.startswith(file_start):
+            return True
+    return False
 
 
 
