@@ -123,8 +123,12 @@ def start():
                 continue
 
             # Main ETL process here
-            object_key = ast.literal_eval(lower_message_body['Message'])['Records'][0]['s3']['object']['key']
-            filename = object_key.split(constants.S3_SOURCE_DIRECTORY)[1]
+            object_key = ast.literal_eval(lower_message_body['Message'])['Records'][0]['s3']['object']['key']#check for gz
+
+            # Get filename
+            length = len(object_key.split('/'))
+            filename = object_key.split('/')[length -1]
+
             res = filenames_table.query(KeyConditionExpression=Key(constants.DYNAMO_FILES_TABLE_PK).eq(filename))
 
             # If file has been already processed delete sqs message and continue
@@ -150,7 +154,6 @@ def start():
 
 if __name__ == "__main__":
     done, msg = process_current_files()
-    exit(0)
     if done:
         print(msg)
         print('Now starting monitoring for new files using SQS polling')
