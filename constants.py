@@ -17,8 +17,8 @@ S3_PROFILE_NAME = "yieldify"#"default"
 # S3 details
 S3_SOURCE_DIRECTORY = 'data/'
 #S3_WORKING_DIRECTORY = 'inbox/'
-S3_DESTINATION_BUCKET = 'yieldifyadamides' #yi-engineering-recruitment
-#S3_DESTINATION_BUCKET = 'yi-engineering-recruitment' #yi-engineering-recruitment
+#S3_DESTINATION_BUCKET = 'yieldifyadamides' #yi-engineering-recruitment
+S3_DESTINATION_BUCKET = 'yi-engineering-recruitment' #yi-engineering-recruitment
 S3_DESTINATION_PREFIX = 'processed/adamidesa/'
 
 # SQS details
@@ -26,7 +26,7 @@ SQS_QUEUE_NAME = 'myqueue'
 SQS_VISIBILITY_TIMEOUT = 1         #VisibilityTimeout = times*3 normal time to be safe , # https://aws.amazon.com/blogs/aws/amazon-sqs-long-polling-batching/
 SQS_WAIT_TIME_SECONDS = 1
 SQS_MESSAGE_VALIDATION_STRING = 'Messages'
-SLEEP_SECONDS = 2
+SLEEP_SECONDS = 4
 
 # DynamoDB details
 DYNAMO_FILES_TABLE = 'processed_files'

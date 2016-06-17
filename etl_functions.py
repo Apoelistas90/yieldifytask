@@ -77,6 +77,8 @@ def validate_ip(ip_column):
 def process_geolocation_data(ip_column):
     location={}
     request_url = constants.GEOLOCATIONURL + constants.APIKEY + '&ip=' + ip_column + '&format=json'
+    # so that the API does not ban us - would be good also to implement a lookup table for already seen IP addresses
+    time.sleep(constants.SLEEP_SECONDS)
     response_content = requests.get(request_url)._content
     try:
         response_content_json = json.loads(response_content)
@@ -164,7 +166,6 @@ def parse_and_transform_file(input_file):
                     tranformed_data[counter] = tranformed_record
                     counter+=1
 
-        # convert directly dict to json and return
         return True,tranformed_data#,json.dumps(tranformed_data)
     except IOError:
         return False,'File not GZIP'
