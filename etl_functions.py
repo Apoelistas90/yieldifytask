@@ -169,23 +169,25 @@ def parse_and_transform_file(input_file):
 def upload_to_s3(output_json,source_file_name,s3,s3_bucket,s3_key_prefix):
     # creating temporary directory for our file
     tempdir = tempfile.mkdtemp(prefix='yieldify')
-    file_name = os.path.basename('tranformed_' + source_file_name )
+    file_name = os.path.basename(source_file_name )
     file_path = os.path.join(tempdir, file_name)
 
     with gz.open(file_path, 'wb') as gzfile:
         gzfile.write(output_json)
-        print('Uploading ' + file_path + ' to ' + s3_key_prefix + file_name)
-
         # delete temporary files and directory from local disk
         gzfile.close()
 
     # Upload file in s3
-    s3.meta.client.upload_file(file_path, s3_bucket, s3_key_prefix + file_name)
-
+    print('Uploading ' + file_path + ' to ' + s3_key_prefix + file_name)
+    try:
+        s3.meta.client.upload_file(file_path, s3_bucket, s3_key_prefix + file_name)
+        print('Upload complete!')
+    except ValueError:
+        return False,'Incomplete upload'
     # Remove temp directory
     shutil.rmtree(tempdir)
 
-    # Check completion of upload
+    # Check completion of upload by checking existence of file in S3
     bucket = s3.Bucket(s3_bucket)
     key = s3_key_prefix + file_name
     objects = list(bucket.objects.filter(Prefix=key))

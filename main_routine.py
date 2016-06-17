@@ -37,19 +37,23 @@ def routine_etl(object_key):
                                  file_path)
 
     if not os.path.isfile(file_path):
-        return False,'Download failed'
+        return False,'Download from S3 to local temp dir for processing failed...'
 
     # Parse and process input file
     print('Processing ' + object_key + '.....')
     output_json = etl_functions.parse_and_transform_file(file_path)
     print('Processing complete!')
 
+    s3_destination_subdir = object_key.split('/')[1] \
+                            + '/' + object_key.split('/')[2] \
+                            + '/' + object_key.split('/')[3] + '/'
+
     # Compress and upload output file in S3
     status, msg = etl_functions.upload_to_s3(output_json,
                                              source_file_name,
                                              s3,
                                              constants.S3_DESTINATION_BUCKET,
-                                             constants.S3_DESTINATION_PREFIX)
+                                             constants.S3_DESTINATION_PREFIX + s3_destination_subdir)
     shutil.rmtree(tempdir)
 
     return status,msg
@@ -67,11 +71,18 @@ def process_current_files():
     elif total_files > 1:
         # Loop through files
         for index in range(0,total_files):
-            if '.gz' not in result['Contents'][index]['Key']:
-                continue
             object_key = result['Contents'][index]['Key']
+            if '.gz' not in object_key:
+                continue
+
+            # Get filename
+            length = len(object_key.split('/'))
+            filename = object_key.split('/')[length -1]
+
+            print(filename)
             # if this file has been processed before continue to next file
-            filename = object_key.split(constants.S3_SOURCE_DIRECTORY)[1]
+            # Note: The check is done against the filename. If a file comes in with the same name across two days
+            # it will only be processed once
             res = filenames_table.query(KeyConditionExpression=Key(constants.DYNAMO_FILES_TABLE_PK).eq(filename))
             if res['Count'] == 1:
                 print('File ' + filename + ' already processed.. Skipping this.')
@@ -139,6 +150,7 @@ def start():
 
 if __name__ == "__main__":
     done, msg = process_current_files()
+    exit(0)
     if done:
         print(msg)
         print('Now starting monitoring for new files using SQS polling')

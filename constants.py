@@ -12,10 +12,10 @@ GEOLOCATIONURL = 'http://api.ipinfodb.com/v3/ip-city/?key='
 APIKEY = 'a24bab79e02ae0e4083b9327dc2c49a9f76babbac85486d99306fa0e18110f95'
 
 # S3 details
-S3_SOURCE_DIRECTORY = 'testdir/'
-S3_WORKING_DIRECTORY = 'inbox/'
-S3_DESTINATION_BUCKET = 'yieldifyadamides'
-S3_DESTINATION_PREFIX = 'uploads/'
+S3_SOURCE_DIRECTORY = 'data/'
+#S3_WORKING_DIRECTORY = 'inbox/'
+S3_DESTINATION_BUCKET = 'yieldifyadamides' #yi-engineering-recruitment
+S3_DESTINATION_PREFIX = 'processed/adamidesa/'
 S3_PROFILE_NAME = "default"
 
 # SQS details
