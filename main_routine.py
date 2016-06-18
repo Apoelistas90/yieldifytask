@@ -24,8 +24,7 @@ s3_client = session.client('s3')
 dynamodb = boto3.resource('dynamodb',region_name='eu-west-1')
 filenames_table = dynamodb.Table(constants.DYNAMO_FILES_TABLE)
 ip_table = dynamodb.Table(constants.DYNAMO_IP_TABLE)
-
-
+ua_table = dynamodb.Table(constants.DYNAMO_UA_TABLE)
 
 def routine_etl(object_key):
 
@@ -50,7 +49,7 @@ def routine_etl(object_key):
 
     # Parse and process input file
     print('Processing ' + object_key + '.....')
-    processing_result , output_json = etl_functions.parse_and_transform_file(file_path,ip_table)
+    processing_result , output_json = etl_functions.parse_and_transform_file(file_path,ip_table,ua_table)
     if not processing_result:
         shutil.rmtree(tempdir)
         return False,'File not gzipped'
