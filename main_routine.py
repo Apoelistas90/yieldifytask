@@ -23,6 +23,8 @@ s3_client = session.client('s3')
 # Setup DynamoDB connection
 dynamodb = boto3.resource('dynamodb',region_name='eu-west-1')
 filenames_table = dynamodb.Table(constants.DYNAMO_FILES_TABLE)
+ip_table = dynamodb.Table(constants.DYNAMO_IP_TABLE)
+
 
 
 def routine_etl(object_key):
@@ -48,7 +50,7 @@ def routine_etl(object_key):
 
     # Parse and process input file
     print('Processing ' + object_key + '.....')
-    processing_result , output_json = etl_functions.parse_and_transform_file(file_path)
+    processing_result , output_json = etl_functions.parse_and_transform_file(file_path,ip_table)
     if not processing_result:
         shutil.rmtree(tempdir)
         return False,'File not gzipped'
@@ -95,8 +97,7 @@ def process_current_files():
             length = len(object_key.split('/'))
             filename = object_key.split('/')[length -1]
 
-
-            # if this file has been processed before continue to next file
+            # If this file has been processed before continue to next file
             # Note: The check is done against the filename. If a file comes in with the same name across two days
             # it will only be processed once
             res = filenames_table.query(KeyConditionExpression=Key(constants.DYNAMO_FILES_TABLE_PK).eq(filename))

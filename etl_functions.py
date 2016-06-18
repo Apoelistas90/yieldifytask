@@ -8,6 +8,8 @@ import datetime,time,re,validators
 import requests
 import constants
 from urlparse import urlparse
+from boto3.dynamodb.conditions import Key
+
 
 
 
@@ -74,26 +76,37 @@ def validate_ip(ip_column):
 
 
 # offline database would be the ideal part here for boosting performance
-def process_geolocation_data(ip_column):
+def process_geolocation_data(ip_column,ip_table):
     location={}
-    request_url = constants.GEOLOCATIONURL + constants.APIKEY + '&ip=' + ip_column + '&format=json'
-    # so that the API does not ban us - would be good also to implement a lookup table for already seen IP addresses
-    time.sleep(constants.SLEEP_SECONDS)
-    response_content = requests.get(request_url)._content
-    try:
-        response_content_json = json.loads(response_content)
-        location['latitude'] = if_null(response_content_json['latitude'],0.0)
-        location['longitude'] = if_null(response_content_json['longitude'],0.0)
-        location['country'] = if_null(response_content_json['countryName'],0.0)
-        location['city'] = if_null(response_content_json['cityName'],0.0)
-        return location,True
-    except ValueError:
-        # sometimes the connection to his API falls out, should the log the failed retrievals
-        # but for now returning back the IP
-        location['ip'] = ip_column
-        print(response_content)
-        print('Failure')
-        return location,False
+    # check if ip column was already seen
+    res = ip_table.query(KeyConditionExpression=Key(constants.DYNAMO_IP_TABLE_PK).eq(ip_column))
+    if res['Count'] == 1:
+            print('IP ' + ip_column + ' already seen.. Getting data for this entry....')
+            # get location data for this ip from db
+            location = res['Items'][0]['value']
+            return location,True
+    # otherwise query 3rd party API
+    else:
+        request_url = constants.GEOLOCATIONURL + constants.APIKEY + '&ip=' + ip_column + '&format=json'
+        # so that the API does not ban us - would be good also to implement a lookup table for already seen IP addresses
+        time.sleep(constants.SLEEP_SECONDS)
+        response_content = requests.get(request_url)._content
+        try:
+            response_content_json = json.loads(response_content)
+            location['latitude'] = if_null(response_content_json['latitude'],0.0)
+            location['longitude'] = if_null(response_content_json['longitude'],0.0)
+            location['country'] = if_null(response_content_json['countryName'],0.0)
+            location['city'] = if_null(response_content_json['cityName'],0.0)
+            # add ip and details to dynamo table
+            ip_table.put_item(Item = {constants.DYNAMO_IP_TABLE_PK: ip_column , 'value': str(location)})
+            return location,True
+        except ValueError:
+            # sometimes the connection to his API falls out, should the log the failed retrievals
+            # but for now returning back the IP
+            location['ip'] = ip_column
+            print(response_content)
+            print('Failure')
+            return location,False
 
 
 # processing of 5th column = ua
@@ -126,18 +139,16 @@ def process_user_agent(ua_column):
     return result
 
 
-def parse_and_transform_file(input_file):
+def parse_and_transform_file(input_file,ip_table):
     tranformed_data = {}
     tranformed_record = {}
     counter=1
+    checkpoints = [500,1000,2000,3000,4000,5000]
     # decompress the file and process according to wanted output
     try:
         with gz.open(input_file, 'rb') as tsvfile:
             records = csv.reader(tsvfile, delimiter='\t')
-
-            # go through each record and
-            # 1. store relevant information in a json(Done)
-            # log invalid records
+            # 1. store relevant information in a json(Done) and log invalid records
             # 2. insert data in DynamoDB for later querying through API service(Not yet started)
             for record in records:
                 if len(record) == constants.TOTAL_LENGTH:
@@ -156,7 +167,7 @@ def parse_and_transform_file(input_file):
                     else:
                         tranformed_record['url'] = 'Invalid'
                     if validate_ip(record[constants.IP_LOCATION]):
-                        tranformed_record['location'], res = process_geolocation_data(record[constants.IP_LOCATION])
+                        tranformed_record['location'], res = process_geolocation_data(record[constants.IP_LOCATION],ip_table)
                     else:
                         tranformed_record['location'] = 'Invalid'
                     if record[constants.UA_LOCATION] != '':
@@ -165,10 +176,13 @@ def parse_and_transform_file(input_file):
                         tranformed_record['user_agent'] = 'Invalid'
                     tranformed_data[counter] = tranformed_record
                     counter+=1
+                    if counter in checkpoints:
+                        print str(counter) + ' files proccessed so far!'
 
-        return True,tranformed_data#,json.dumps(tranformed_data)
+        return True,tranformed_data
     except IOError:
         return False,'File not GZIP'
+
 
 def upload_to_s3(output_json,source_file_name,s3,s3_bucket,s3_key_prefix):
     # creating temporary directory for our file
@@ -176,6 +190,7 @@ def upload_to_s3(output_json,source_file_name,s3,s3_bucket,s3_key_prefix):
     file_name = os.path.basename(source_file_name )
     file_path = os.path.join(tempdir, file_name)
 
+    # new line delimited json
     final_json = ''
     for k,v in output_json.items():
         final_json +=str(v) + '\n'

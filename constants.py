@@ -32,6 +32,9 @@ SLEEP_SECONDS = 4
 DYNAMO_FILES_TABLE = 'processed_files'
 DYNAMO_FILES_TABLE_PK = 'file_name'
 
+DYNAMO_IP_TABLE = 'geolocation_data'
+DYNAMO_IP_TABLE_PK = 'ip'
+
 # Other
 TEMP_DIR = 'yieldify'
 
