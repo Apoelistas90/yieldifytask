@@ -168,6 +168,8 @@ def parse_and_transform_file(input_file,ip_table,ua_table):
 
     ip_dict = {}
     ua_dict = {}
+
+    final = ''
     # decompress the file and process according to wanted output
     try:
         with gz.open(input_file, 'rb') as tsvfile:
@@ -198,11 +200,12 @@ def parse_and_transform_file(input_file,ip_table,ua_table):
                         tranformed_record['user_agent'] = process_user_agent(record[constants.UA_LOCATION],ua_table,reg_b,reg_v,ua_dict)
                     else:
                         tranformed_record['user_agent'] = 'Invalid'
-                    tranformed_data[counter] = tranformed_record
+                    final += str(tranformed_record) + '\n'
+                    #tranformed_data[counter] = tranformed_record
                     counter+=1
                     if counter in checkpoints:
                         print str(counter) + ' files proccessed so far! Current time: ' + str(strftime("%Y-%m-%d %H:%M:%S", gmtime()))
-        return True,tranformed_data
+        return True,final
     except IOError:
         return False,'File not GZIP'
 
@@ -214,12 +217,12 @@ def upload_to_s3(output_json,source_file_name,s3,s3_bucket,s3_key_prefix):
     file_path = os.path.join(tempdir, file_name)
 
     # new line delimited json
-    final_json = ''
-    for k,v in output_json.items():
-        final_json +=str(v) + '\n'
+    #final_json = ''
+    #for k,v in output_json.items():
+    #    final_json +=str(v) + '\n'
 
     with gz.open(file_path, 'wb') as gzfile:
-        gzfile.write(final_json)
+        gzfile.write(output_json)
         gzfile.close()
 
     # Upload file in s3
